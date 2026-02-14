@@ -1,0 +1,20 @@
+{
+  "loginValido": {
+    "email": "wilians.dcsouza@sp.senac.br",
+    "senha": "teste#100teste"
+  },
+  "emailInvalido": {
+  "email": "email_invalido@teste.com",
+  "senha": "senha_valida",
+  "mensagemErro": "E-mail não encontrado!"
+
+  },
+  "camposVazios": {
+    "email": "",
+    "senha": ""
+  },
+  
+  "textoAreaExclusiva": "Área Exclusiva de"
+
+  
+}

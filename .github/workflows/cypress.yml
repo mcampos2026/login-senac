@@ -1,0 +1,91 @@
+name: E2E Cypress
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC (23:00 em SP, -03)
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: e2e-cypress-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CYPRESS_BASE_URL: https://www.sp.senac.br/
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Run Cypress
+        id: run_cypress
+        run: npm run cy:run
+
+      # Sempre tenta subir evidências, mesmo quando falhar
+      - name: Upload Cypress artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/screenshots/**
+            cypress/videos/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # Cria Issue automaticamente quando falhar
+      - name: Create GitHub Issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const title = `CI Cypress falhou: ${context.workflow} #${context.runNumber}`;
+            const body =
+              `Falha no workflow de Cypress.\n\n` +
+              `Run: ${runUrl}\n\n` +
+              `Branch/Ref: ${context.ref}\n` +
+              `Commit: ${context.sha}\n\n` +
+              `Artifacts: abra o run e baixe "cypress-artifacts".`;
+
+            // Evita abrir issue repetida para o mesmo SHA
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner, repo, state: "open", per_page: 50
+            });
+
+            const alreadyOpen = issues.some(i => i.title.includes(context.sha.slice(0, 7)) || i.body?.includes(context.sha));
+
+            if (!alreadyOpen) {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: `${title} (${context.sha.slice(0,7)})`,
+                body
+              });
+            }
