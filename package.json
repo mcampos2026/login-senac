@@ -1,12 +1,13 @@
 {
-  "name": "login-senac",
+  "name": "cypress-login-ebac",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "cy:run": "cypress run",
-    "cy:open": "cypress open"
-  },
+  "cy:run": "cypress run --browser chrome --headless",
+  "cy:open": "cypress open"
+}
+,
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -14,4 +15,5 @@
   "devDependencies": {
     "cypress": "^15.9.0"
   }
+  
 }
